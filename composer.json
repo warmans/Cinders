@@ -1,0 +1,10 @@
+{
+    "require": {
+        "symfony/http-kernel": "2.1.*",
+        "phing/phing": "2.5.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-0": {"Cinders": "src/"}
+    }
+}
