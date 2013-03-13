@@ -27,7 +27,7 @@ class Api {
         $route = new Api\ActiveRoute($request->getPathInfo());
 
         foreach ($this->resources as $resource) {
-            if($resource->getName() == $route->getCurrentSegment()){
+            if ($resource->getName() == $route->getCurrentSegment()) {
                 return $resource->handleRequest($route, $request);
             }
         }
