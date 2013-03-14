@@ -27,9 +27,8 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     public function testLoadValidFile()
     {
         $this->mock_file
-            ->expects($this->once())
+            ->expects($this->atLeastOnce())
             ->method('flock')
-            ->with($this->equalTo(LOCK_EX))
             ->will($this->returnValue(true));
 
         $this->mock_file
@@ -50,9 +49,8 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     public function testSetData()
     {
         $this->mock_file
-            ->expects($this->once())
+            ->expects($this->atLeastOnce())
             ->method('flock')
-            ->with($this->equalTo(LOCK_EX))
             ->will($this->returnValue(true));
 
         $this->mock_file
@@ -67,5 +65,59 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
 
         $object = new \Cinders\Metadata($this->mock_file);
         $object->setData(array('cat'=>'dog'));
+    }
+
+    /**
+     * @covers \Cinders\Metadata::startWriting
+     */
+    public function testStartWriting()
+    {
+        $this->mock_file
+            ->expects($this->atLeastOnce())
+            ->method('flock')
+            ->will($this->returnValue(true));
+
+        $object = new \Cinders\Metadata($this->mock_file, true);
+        $object->startWriting();
+    }
+
+   /**
+     * @covers \Cinders\Metadata::startWriting
+    * @expectedException \RuntimeException
+     */
+    public function testFailedLock()
+    {
+        $this->mock_file
+            ->expects($this->atLeastOnce())
+            ->method('flock')
+            ->will($this->returnValue(false));
+
+        $object = new \Cinders\Metadata($this->mock_file, true);
+        $object->startWriting();
+    }
+
+    /**
+     * @covers \Cinders\Metadata::finishWriting
+     */
+    public function testManuallyFinishWriting()
+    {
+        $this->mock_file
+            ->expects($this->atLeastOnce())
+            ->method('flock')
+            ->will($this->returnValue(true));
+
+        $object = new \Cinders\Metadata($this->mock_file, true);
+        $object->startWriting();
+        $object->finishWriting();
+    }
+
+   /**
+     * @covers \Cinders\Metadata::flushToDisk
+    * @expectedException \RuntimeException
+     */
+    public function testFlushReadonlyFile()
+    {
+        $object = new \Cinders\Metadata($this->mock_file, true);
+        $object->flushToDisk();
     }
 }

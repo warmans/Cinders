@@ -16,7 +16,12 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
 
     public function setUp()
     {
-        $this->object = new \Cinders\Api;
+        $this->object = new \Cinders\Api($this->getMockCinders());
+    }
+
+    private function getMockCinders()
+    {
+        return $this->getMockBuilder('\\Cinders\\Cinders')->disableOriginalConstructor()->getMock();
     }
 
     public function testAddResource()
@@ -35,7 +40,7 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
             ->expects($this->atLeastOnce())
             ->method('getMethod')
             ->will($this->returnValue('GET'));
-        
+
         $mock_request
             ->expects($this->atLeastOnce())
             ->method('getPathInfo')

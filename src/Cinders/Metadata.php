@@ -14,9 +14,9 @@ class Metadata
     private $file;
 
     /**
-     * @var array
+     * @var object
      */
-    private $data = array();
+    private $data;
 
     /**
      * @var bool
@@ -28,9 +28,7 @@ class Metadata
         $this->file = $file;
 
         if (!$read_only) {
-            if (!$this->file->flock(LOCK_EX)) {
-                throw new \RuntimeException('Metadata is locked');
-            }
+            $this->startWriting();
         }
 
         $this->read_only = $read_only;
@@ -38,15 +36,35 @@ class Metadata
         $this->reloadFromDisk();
     }
 
+    public function __destruct()
+    {
+        $this->finishWriting();
+    }
+
+    public function startWriting()
+    {
+        if (!$this->file->flock(LOCK_EX)) {
+            throw new \RuntimeException('Unable to lock metadata for writing');
+        }
+    }
+
+    public function finishWriting()
+    {
+        $this->file->flock(LOCK_UN);
+    }
+
     public function reloadFromDisk()
     {
+        $this->file->rewind();
+
         $serialised = '';
         while($this->file->valid()) {
             $serialised .= $this->file->current() . PHP_EOL;
         }
 
         //file is empty - that's fine
-        if ($serialised == '') {
+        if (trim($serialised) == '') {
+            $this->data = new \stdClass(); //make it a blank object
             return true;
         }
 
@@ -92,6 +110,9 @@ class Metadata
         if (!$this->flushToDisk()) {
             throw new \RuntimeException('Flush to disk failed');
         }
+
+        //ensure consistent data between fresh data and data pulled off disk (i.e. data is always an object)
+        $this->reloadFromDisk();
     }
 
     public function getLocationOnDisk()

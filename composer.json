@@ -2,7 +2,8 @@
     "require": {
         "symfony/http-kernel": "2.1.*",
         "phing/phing": "2.5.0",
-        "symfony/filesystem": "v2.2.0"
+        "symfony/filesystem": "v2.2.0",
+        "symfony/finder": "v2.2.0"
     },
     "minimum-stability": "stable",
     "autoload": {

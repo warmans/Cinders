@@ -6,19 +6,8 @@ namespace Cinders;
  *
  * @author warmans
  */
-class Project
+class Project extends Artifact
 {
-    /**
-     *
-     * @var \Cinders\Metadata
-     */
-    private $metadata;
-
-    public function __construct(Metadata $metadata)
-    {
-        $this->metadata = $metadata;
-    }
-
     /**
      * Root path of the project
      * @return string
@@ -45,5 +34,25 @@ class Project
     public function getBuildsPath()
     {
         return $this->getProjectPath().'/builds';
+    }
+
+    /**
+     * Get all builds for this project
+     */
+    public function getBuilds()
+    {
+        $builds = array();
+        foreach ($this->filesystem->findFiles('build.meta', $this->getBuildsPath()) as $build_meta_file) {
+            $builds[] = new Project\Build(new Metadata(new \SplFileObject($build_meta_file)), $this->filesystem);
+        }
+
+        return $builds;
+    }
+
+    public function build()
+    {
+        $build = \Cinders\Project\Build::init($this->getBuildsPath(), $this->filesystem);
+
+        //do more build stuff
     }
 }

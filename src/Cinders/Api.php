@@ -5,7 +5,17 @@ use \Symfony\Component\HttpFoundation;
 
 class Api {
 
+    /**
+     * @var \Cinders\Cinders
+     */
+    private $cinders;
+
     private $resources = array();
+
+    public function __construct(Cinders $cinders)
+    {
+        $this->cinders = $cinders;
+    }
 
     public function addResource(Api\Resource $resource)
     {
