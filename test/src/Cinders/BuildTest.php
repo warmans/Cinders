@@ -26,6 +26,7 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Project\Build::__construct
      * @covers \Cinders\Project\Build::meta
      */
@@ -35,6 +36,7 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Project\Build::getBuildPath
      */
     public function testGetBuildPath()
@@ -43,6 +45,7 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Project\Build::getReportsPath
      */
     public function testGetReportsPath()
@@ -53,6 +56,10 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @group unit-test
+     * @covers \Cinders\Project\Build::init
+     */
     public function testBuildInit()
     {
         $build = Build::init(TEST_PROJECTS.DS.'bar'.DS.'builds', new \Cinders\Filesystem(), 'testbuild');

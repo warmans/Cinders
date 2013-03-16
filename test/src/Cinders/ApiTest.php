@@ -24,6 +24,9 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
         return $this->getMockBuilder('\\Cinders\\Cinders')->disableOriginalConstructor()->getMock();
     }
 
+    /**
+     * @group unit-test
+     */
     public function testAddResource()
     {
         $resource = new \Cinders\Api\Resource\Hello('hello');
@@ -31,6 +34,9 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(array($resource), $this->object->getResources());
     }
 
+    /**
+     * @group unit-test
+     */
     public function testHandleRequest()
     {
         $this->object->addResource(new Api\Resource\Hello('hello'));

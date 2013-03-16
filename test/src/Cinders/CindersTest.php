@@ -14,6 +14,7 @@ class CindersTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Cinders::__construct
      * @covers \Cinders\Cinders::getProjects
      */

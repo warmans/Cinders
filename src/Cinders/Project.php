@@ -53,6 +53,13 @@ class Project extends Artifact
     {
         $build = \Cinders\Project\Build::init($this->getBuildsPath(), $this->filesystem);
 
+        $this->getBuilder()->build($this, $build);
+
         //do more build stuff
+    }
+
+    private function getBuilder()
+    {
+        return new \Cinders\Project\Builder\Phing();
     }
 }

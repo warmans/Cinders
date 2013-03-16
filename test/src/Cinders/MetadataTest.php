@@ -19,6 +19,7 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Metadata::__construct
      * @covers \Cinders\Metadata::__get
      * @covers \Cinders\Metadata::reloadFromDisk
@@ -46,7 +47,50 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('bar', $object->foo);
     }
 
+    /**
+     * @group unit-test
+     */
     public function testSetData()
+    {
+        $this->mock_file
+            ->expects($this->any())
+            ->method('flock')
+            ->will($this->returnValue(true));
+
+        $this->mock_file
+            ->expects($this->any())
+            ->method('fwrite')
+            ->will($this->returnValue(100));
+
+        $object = new \Cinders\Metadata($this->mock_file);
+
+        $object->setData(array('foo'=>array('bar'=>'baz')));
+        $this->assertEquals('baz', $object->foo->bar);
+
+        $object->setData(array('foo'=>array('cat'=>'dog')));
+        $this->assertEquals('baz', $object->foo->bar); //old value still exists
+        $this->assertEquals('dog', $object->foo->cat); //new value was merged in
+
+        $object->setData(array('foo'=>'bart'));
+        $this->assertEquals('bart', $object->foo); //foo obj replaced with scalar value
+        $this->assertFalse(isset($object->foo->cat)); //cat no longer exists
+
+        $object->setData(array('foo'=>'bort'));
+        $this->assertEquals('bort', $object->foo); //bart val replaced with bort val
+
+        //deep recursion test
+        $object->setData(array('foo'=>array('homer'=>array('marge'=>array('lisa'=>'1')))));
+        $object->setData(array('foo'=>array('homer'=>array('marge'=>array('bart'=>'2')))));
+        $object->setData(array('foo'=>array('homer'=>array('marge'=>array('maggie'=>'3')))));
+        $this->assertEquals('1', $object->foo->homer->marge->lisa);
+        $this->assertEquals('2', $object->foo->homer->marge->bart);
+        $this->assertEquals('3', $object->foo->homer->marge->maggie);
+    }
+
+    /**
+     * @group unit-test
+     */
+    public function testSetDataWritesToDisk()
     {
         $this->mock_file
             ->expects($this->atLeastOnce())
@@ -68,6 +112,7 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Metadata::startWriting
      */
     public function testStartWriting()
@@ -82,9 +127,10 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     }
 
    /**
-     * @covers \Cinders\Metadata::startWriting
+    * @group unit-test
+    * @covers \Cinders\Metadata::startWriting
     * @expectedException \RuntimeException
-     */
+    */
     public function testFailedLock()
     {
         $this->mock_file
@@ -97,6 +143,7 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @group unit-test
      * @covers \Cinders\Metadata::finishWriting
      */
     public function testManuallyFinishWriting()
@@ -112,9 +159,10 @@ class MetadataTest extends \PHPUnit_Framework_TestCase {
     }
 
    /**
-     * @covers \Cinders\Metadata::flushToDisk
+    * @group unit-test
+    * @covers \Cinders\Metadata::flushToDisk
     * @expectedException \RuntimeException
-     */
+    */
     public function testFlushReadonlyFile()
     {
         $object = new \Cinders\Metadata($this->mock_file, true);

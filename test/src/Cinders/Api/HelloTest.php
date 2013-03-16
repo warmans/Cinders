@@ -19,16 +19,25 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
         $this->object = new \Cinders\Api\Resource\Hello('hello');
     }
 
+    /**
+     * @group unit-test
+     */
     public function testGetName()
     {
         $this->assertEquals('hello', $this->object->getName());
     }
 
+    /**
+     * @group unit-test
+     */
     public function testGetClaimedPathSegments()
     {
         $this->assertContains('msg', array_keys($this->object->claimPathSegments()));
     }
 
+    /**
+     * @group unit-test
+     */
     public function testSetGetParent()
     {
         $parent = new \Cinders\Api\Resource\Hello('hello2');
@@ -36,6 +45,9 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($parent, $this->object->getParent());
     }
 
+    /**
+     * @group unit-test
+     */
     public function testAddResource()
     {
         $child = new \Cinders\Api\Resource\Hello('hello2');
@@ -43,6 +55,9 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
         $this->assertContains($child, $this->object->getSubResources());
     }
 
+    /**
+     * @group unit-test
+     */
     public function testMatchRoute()
     {
         $route = new \Cinders\Api\ActiveRoute('/hello/world');
@@ -60,6 +75,9 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('world', $content->data);
     }
 
+    /**
+     * @group unit-test
+     */
     public function testMatchRouteWithSubResource()
     {
         $route = new \Cinders\Api\ActiveRoute('/hello/world/foo/bar');
