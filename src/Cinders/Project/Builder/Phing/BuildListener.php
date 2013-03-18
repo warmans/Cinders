@@ -1,4 +1,5 @@
 <?php
+namespace Cinders\Project\Builder\Phing;
 
 /**
  * BuildListener

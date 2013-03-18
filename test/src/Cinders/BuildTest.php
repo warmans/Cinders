@@ -14,16 +14,23 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
 
     public function setUp()
     {
-        //testbuild
-        if(is_file(TEST_PROJECTS.'/bar/builds/testbuild')){
-            rmdir(TEST_PROJECTS.'/bar/builds/testbuild');
-        }
+        $this->cleanUp();
 
         $this->object = new Build(
             new \Cinders\Metadata(new \SplFileObject(TEST_PROJECTS.'/foo/builds/foobuild/build.meta'), true),
             new \Cinders\Filesystem()
         );
     }
+
+    private function cleanUp()
+    {
+        $fs = new \Cinders\Filesystem();
+        //remove test project
+        if ($fs->exists(TEST_PROJECTS.'/bar/builds/testbuild')) {
+            $fs->remove(TEST_PROJECTS.'/bar/builds/testbuild');
+        }
+    }
+
 
     /**
      * @group unit-test
@@ -54,16 +61,5 @@ class BuildTest extends \PHPUnit_Framework_TestCase {
             TEST_PROJECTS.DS.'foo'.DS.'builds'.DS.'foobuild'.DS.'reports',
             $this->object->getReportsPath()
         );
-    }
-
-    /**
-     * @group unit-test
-     * @covers \Cinders\Project\Build::init
-     */
-    public function testBuildInit()
-    {
-        $build = Build::init(TEST_PROJECTS.DS.'bar'.DS.'builds', new \Cinders\Filesystem(), 'testbuild');
-        $this->assertTrue($build instanceof Build);
-        $this->assertEquals('testbuild', $build->meta()->build->name);
     }
 }

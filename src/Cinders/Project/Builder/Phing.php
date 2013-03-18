@@ -1,5 +1,5 @@
 <?php
-namespace Cinders\Project\Builder\Phing;
+namespace Cinders\Project\Builder;
 
 /**
  * Phing Builder
@@ -19,7 +19,7 @@ class Phing extends \Cinders\Project\Builder
     {
         $timer = \Cinders\Util\Timer::start();
 
-        $build_listener = new \BuildListener();
+        $build_listener = new Phing\BuildListener();
         $build_file_path = $project->getWorkspacePath().DIRECTORY_SEPARATOR.$this->build_file_name;
 
         //run the build

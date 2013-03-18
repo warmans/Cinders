@@ -8,6 +8,8 @@ namespace Cinders;
  */
 class Project extends Artifact
 {
+    const META_NAME = 'project.meta';
+
     /**
      * Root path of the project
      * @return string
@@ -42,20 +44,41 @@ class Project extends Artifact
     public function getBuilds()
     {
         $builds = array();
-        foreach ($this->filesystem->findFiles('build.meta', $this->getBuildsPath()) as $build_meta_file) {
+        foreach ($this->filesystem->findFiles(Project\Build::META_NAME, $this->getBuildsPath()) as $build_meta_file) {
             $builds[] = new Project\Build(new Metadata(new \SplFileObject($build_meta_file)), $this->filesystem);
         }
 
         return $builds;
     }
 
-    public function build()
+    public function build($name=null)
     {
-        $build = \Cinders\Project\Build::init($this->getBuildsPath(), $this->filesystem);
+        $build_name = $name ?: date('Y_m_d_H_i_s_').getmygid();
+        $build_path = $this->getBuildsPath().DIRECTORY_SEPARATOR.$build_name;
+        $build_meta_path = $build_path.DIRECTORY_SEPARATOR.Project\Build::META_NAME;
 
+        //make a directory
+        $this->filesystem->mkdir($build_path);
+
+        //make metadata file
+        $metadata = new \Cinders\Metadata(new \SplFileObject($build_meta_path, 'w+'));
+        $metadata->setData(array(
+            'build'=>array(
+                'name'=>$build_name,
+                'created_date'=>date('Y-m-d H:i:s')
+            )
+        ));
+        $metadata->finishWriting();
+
+        //get a new build instance
+        $build = new Project\Build($metadata, $this->filesystem);
+
+        //build the workspace
         $this->getBuilder()->build($this, $build);
 
-        //do more build stuff
+        //@todo do the rest of the build stuff
+
+        return $build;
     }
 
     private function getBuilder()
