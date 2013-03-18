@@ -13,7 +13,8 @@ class BuildListener implements \BuildListener
      *
      * @param BuildEvent $event The BuildEvent
      */
-    public function buildStarted(\BuildEvent $event){
+    public function buildStarted(\BuildEvent $event)
+    {
 
     }
 
@@ -23,8 +24,9 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent::getException()
      */
-    public function buildFinished(\BuildEvent $event){
-
+    public function buildFinished(\BuildEvent $event)
+    {
+ 
     }
 
     /**
@@ -33,8 +35,8 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent::getTarget()
      */
-    public function targetStarted(\BuildEvent $event){
-
+    public function targetStarted(\BuildEvent $event)
+    {
     }
 
     /**
@@ -43,7 +45,8 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent#getException()
      */
-    public function targetFinished(\BuildEvent $event){
+    public function targetFinished(\BuildEvent $event)
+    {
 
     }
 
@@ -53,7 +56,8 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent::getTask()
      */
-    public function taskStarted(\BuildEvent $event){
+    public function taskStarted(\BuildEvent $event)
+    {
 
     }
 
@@ -63,7 +67,8 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent::getException()
      */
-    public function taskFinished(\BuildEvent $event){
+    public function taskFinished(\BuildEvent $event)
+    {
 
     }
 
@@ -73,7 +78,8 @@ class BuildListener implements \BuildListener
      * @param BuildEvent $event The BuildEvent
      * @see BuildEvent::getMessage()
      */
-    public function messageLogged(\BuildEvent $event){
+    public function messageLogged(\BuildEvent $event)
+    {
 
     }
 }

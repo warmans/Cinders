@@ -19,26 +19,41 @@ class Phing extends \Cinders\Project\Builder
     {
         $timer = \Cinders\Util\Timer::start();
 
-        $build_listener = new Phing\BuildListener();
+        $build_listener = '\\Cinders\\Project\\Builder\\Phing\\BuildListener';
         $build_file_path = $project->getWorkspacePath().DIRECTORY_SEPARATOR.$this->build_file_name;
 
-        //run the build
-        $phing = new \Phing();
-        $phing->execute(
-            array('-buildfile', $build_file_path, '-listener', $build_listener )
-        );
-        $phing->runBuild();
+        try {
+            //run the build
+            $phing = new \Phing();
+            $phing->startup();
 
-        //@todo determine the success of the build
-        $success = true;
+            //add some properties
+            \Phing::setProperty('cinders.build_output', $build->getBuildOutputPath());
+
+            $phing->execute(
+                array(
+                    '-buildfile',
+                    $build_file_path,
+                    '-listener',
+                    $build_listener,
+                    '-logfile',
+                    $build->getBuildOutputPath().'/phing.log'
+                )
+            );
+            $phing->runBuild();
+            $success = true;
+        } catch (\Exception $e) {
+            $success = false;
+        }
 
         //add meta to the build
+
         $build->meta()->startWriting();
-        $build->meta()->addData(
+        $build->meta()->setData(
             array(
                 'build'=>array(
                     'success'=>$success,
-                    'time_taken'=>$timer->elapsed()
+                    'time_taken'=>$timer->elapsed(),
                 )
             )
         );

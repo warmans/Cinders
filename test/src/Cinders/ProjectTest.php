@@ -22,11 +22,6 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function tearDown()
-    {
-        $this->cleanUp();
-    }
-
     private function cleanUp()
     {
         $fs = new \Cinders\Filesystem();
@@ -82,16 +77,13 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @group failure
-     * @covers \Cinders\Project\Build::init
+     * @group unit-test
+     * @covers \Cinders\Project::build
      */
     public function testBuild()
     {
         $build = $this->object->build('testbuild');
-        $this->assertTrue($build instanceof Build);
-
-
-        //clean-up
-        $build->destroy();
+        $this->assertTrue($build instanceof \Cinders\Project\Build);
+        $this->assertTrue(file_exists($build->getBuildOutputPath().'/phing.log'));
     }
 }

@@ -92,7 +92,10 @@ class Metadata
             throw new \RuntimeException('Data is read only');
         }
 
+        //reset file
         $this->file->ftruncate(0);
+        $this->file->rewind();
+
         if ($this->file->fwrite($this->encodeData($this->data)) !== null) {
             //ensure consistent data between fresh data and data pulled off disk (i.e. data is always an object)
             $this->reloadFromDisk();

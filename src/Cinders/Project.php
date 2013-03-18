@@ -72,7 +72,8 @@ class Project extends Artifact
 
         //get a new build instance
         $build = new Project\Build($metadata, $this->filesystem);
-
+        $build->init();
+        
         //build the workspace
         $this->getBuilder()->build($this, $build);
 

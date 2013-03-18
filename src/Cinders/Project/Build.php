@@ -19,6 +19,17 @@ class Build extends \Cinders\Artifact
         return $this->getBuildPath().DIRECTORY_SEPARATOR.'reports';
     }
 
+    public function getBuildOutputPath()
+    {
+        return $this->getBuildPath().DIRECTORY_SEPARATOR.'output';
+    }
+
+    public function init()
+    {
+        $this->filesystem->mkdir($this->getReportsPath());
+        $this->filesystem->mkdir($this->getBuildOutputPath());
+    }
+
     public function destroy()
     {
         $this->meta()->finishWriting();
