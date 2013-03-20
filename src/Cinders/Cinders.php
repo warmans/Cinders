@@ -48,7 +48,7 @@ class Cinders
     public function getProjects()
     {
         $projects = array();
-        foreach($this->filesystem->findFiles('project.meta', $this->projects_root) as $file){
+        foreach($this->filesystem->findFiles(Project::META_NAME, $this->projects_root) as $file){
             $projects[] = new Project(new Metadata(new \SplFileObject($file)), $this->filesystem);
         }
         return $projects;
