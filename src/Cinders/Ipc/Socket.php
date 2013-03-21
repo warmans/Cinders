@@ -8,7 +8,7 @@ namespace Cinders\Ipc;
  *
  * @author warmans
  */
-class Socket
+class Socket implements \Psr\Log\LoggerAwareInterface
 {
     /**
      * The end of transmission char(s). Note these are stripped from data so be careful!
@@ -23,6 +23,8 @@ class Socket
     private $socket;
     private $socket_config = array();
     private $connected = false;
+
+    private $log;
 
     /**
      * First param can either be a socket resource or a domain. If a domain is passed a type and protocol
@@ -49,6 +51,30 @@ class Socket
         } else {
             $this->socket = $domain_or_socket;
         }
+
+        //by default dn't log anywhere
+        $this->log = new \Psr\Log\NullLogger();
+    }
+
+    public function setLogger(\Psr\Log\LoggerInterface $logger)
+    {
+        $this->log = $logger;
+    }
+
+    public function getPeerinfo()
+    {
+        if (!$this->getConf('peer_address')) {
+
+            $addr = $port = null;
+            if(!socket_getpeername($this->socket, $addr, $port)){
+                return false;
+            }
+
+            $this->setConf('peer_address', $addr);
+            $this->setConf('peer_port', $port);
+        }
+
+        return $this->getConf('peer_address').($this->getConf('peer_port') ? ":{$this->getConf('peer_port')}" : '');
     }
 
     /**
@@ -104,7 +130,7 @@ class Socket
             throw $this->getSocketException("Unable to connect to $address".($port ? ":$port" : ''));
         }
 
-        $this->connected = true;
+        $this->setConnected();
 
         $this->setConf('connected_address', $address);
         $this->setConf('connected_port', $port);
@@ -136,7 +162,12 @@ class Socket
         if (!($connected = socket_accept($this->socket))) {
             throw $this->getSocketException("Listen failed");
         }
-        return self::wrapSocket($connected);
+
+        //wrap raw socket
+        $new_socket = self::wrapSocket($connected);
+        $new_socket->setLogger($this->log);
+        $new_socket->setConnected();
+        return $new_socket;
     }
 
     /**
@@ -146,17 +177,20 @@ class Socket
      * @return boolean
      * @throws \Exception
      */
-    public function write($data)
+    public function write(Package $data)
     {
+        //serialise package to string
+        $data = $data->serialise();
+
         $buffer_len = strlen($data);
         $buffer_sent = 0;
 
-        $this->log(">-- Sending...   $buffer_len Bytes | ".$data);
+        $this->log->debug(">-- Sending...   $buffer_len Bytes | ".$data);
 
         while ($buffer_sent < $buffer_len) {
 
             //do send
-            $sent = socket_write(
+            $sent = @socket_write(
                 $this->socket,
                 $this->sanitizeData(substr($data, $buffer_sent)),
                 $buffer_len-$buffer_sent
@@ -164,21 +198,21 @@ class Socket
 
             //check errors
             if ($sent === false) {
-                throw $this->getSocketException('--> Failed to send data');
+                return false;
             }
 
             //acumulate size
             $buffer_sent += $sent;
 
             //debug
-            $this->log("->- Sending...   ".$buffer_sent." ($buffer_len) Bytes");
+            $this->log->debug("->- Sending...   ".$buffer_sent." ($buffer_len) Bytes");
         }
 
         //terminate
         socket_write($this->socket, self::EOF);
 
         // debug
-        $this->log("--> Sending...   Complete $buffer_sent Bytes");
+        $this->log->debug("--> Sending...   Complete $buffer_sent Bytes");
 
         //sent OK
         return true;
@@ -189,7 +223,7 @@ class Socket
      *
      * @param resource $socket
      * @param int $timeout
-     * @return string
+     * @return Package
      * @throws \RuntimeException
      */
     public function read()
@@ -197,7 +231,7 @@ class Socket
         $bytes_recieved = 0;
         $recieved = $buffer = '';
 
-        $this->log("--< Recieving...");
+        $this->log->debug("--< Recieving...");
 
         while($buffer = socket_read($this->socket, self::CHUNK_SIZE)) {
 
@@ -205,7 +239,7 @@ class Socket
             $bytes_recieved += strlen($buffer);
 
             //debugging
-            $this->log("-<- Recieving... ".strlen($buffer)." ($bytes_recieved) Bytes");
+            $this->log->debug("-<- Recieving... ".strlen($buffer)." ($bytes_recieved) Bytes");
 
             //check for termination char
             if(strstr($buffer, self::EOF)){
@@ -218,14 +252,18 @@ class Socket
             $recieved .= $buffer;
         }
 
-        //a false buffer signals a disconnect
-        if ($buffer === false) {
-            $this->connected = false;
+        $this->log->debug("<-- Recieving... Complete $bytes_recieved Bytes | ".$recieved);
+
+        if (!$buffer) {
+            $this->log->debug("-/- Connection Closed");
+            $this->setConnected(false);
         }
 
-        $this->log("<-- Recieving... Complete $bytes_recieved Bytes | ".$recieved);
+        if ($recieved) {
+            return Package::unserialise($recieved);
+        }
 
-        return $recieved;
+        return false;
     }
 
     /**
@@ -249,10 +287,11 @@ class Socket
     }
 
     /**
-     * Clost the socket
+     * Close the socket
      */
     public function close()
     {
+        socket_shutdown($this->socket);
         socket_close($this->socket);
         $this->connected = false;
     }
@@ -289,6 +328,11 @@ class Socket
         return $this->connected;
     }
 
+    public function setConnected($status=true)
+    {
+        $this->connected = $status;
+    }
+
     /**
      * Create exception including socket error
      *
@@ -311,10 +355,5 @@ class Socket
     protected function sanitizeData($data)
     {
         return str_replace(self::EOF, '', $data);
-    }
-
-    protected function log($msg)
-    {
-        echo $msg."\n";
     }
 }

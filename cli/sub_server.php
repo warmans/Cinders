@@ -5,7 +5,10 @@ use \Cinders\Ipc;
 
 unlink('/tmp/sub_srv.sock');
 
+$logger = new \Cinders\Log\StdOut();
+
 $socket = new Ipc\Socket(AF_UNIX, SOCK_STREAM, 0);
+$socket->setLogger($logger);
 $socket->bind('/tmp/sub_srv.sock');
 $socket->connect('/tmp/server.sock');
 
@@ -14,7 +17,7 @@ $collection->attach($socket);
 
 while (1) {
 
-    if(!count($collection)){
+    if (!count($collection)) {
         return;
     }
 
@@ -26,11 +29,16 @@ while (1) {
         foreach ($data_to_handle['read'] as $read_socket) {
 
             $msg =  $read_socket->read();
-            if ($msg === '') {
+            if (false === $msg) {
                 $collection->detach($read_socket);
                 echo "Server Disconnected\n";
             } else {
-                echo 'New Message '.$msg."\n";
+
+                echo 'New Message '.$msg->getPayload()."\n";
+
+                if ($msg->getType() != Ipc\Package::TYPE_ACK) {
+                    $read_socket->write(new Ipc\Package(Ipc\Package::TYPE_ACK, 'OK'));
+                }
             }
         }
     }

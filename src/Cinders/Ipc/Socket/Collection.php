@@ -18,17 +18,17 @@ class Collection extends \SplObjectStorage
 
             $read_collection = new static();
             foreach ($sock_to_read as $readable_socket) {
-                $read_collection->attach(\Cinders\Ipc\Socket::wrapSocket($readable_socket));
+                $read_collection->attach($this->findBySocket($readable_socket));
             }
 
             $write_collection = new static();
             foreach ($sock_to_write as $writable_socket) {
-                $write_collection->attach(Sock::wrapSocket($writable_socket));
+                $write_collection->attach($this->findBySocket($writable_socket));
             }
 
             $exception_collection = new static();
             foreach ($sock_exceptions as $exception_socket) {
-                $exception_collection->attach(Sock::wrapSocket($exception_socket));
+                $exception_collection->attach($this->findBySocket($exception_socket));
             }
 
             return array(
@@ -46,17 +46,24 @@ class Collection extends \SplObjectStorage
         parent::detach($object);
 
         //remove identical objects and objects that have an identical socket
-        $this->removeClientBySocket($object->getSocket());
+        $this->detachBySocket($object->getSocket());
     }
 
-    public function removeClientBySocket($socket)
+    public function contains($object)
     {
-        if ($object = $this->getClientBySocket($socket)) {
+        if(!parent::contains($object)){
+            return $this->findBySocket($object->getSocket()) ? true : false;
+        }
+    }
+
+    public function detachBySocket($socket)
+    {
+        if ($object = $this->findBySocket($socket)) {
             parent::detach($object);
         }
     }
 
-    public function getClientBySocket($socket)
+    public function findBySocket($socket)
     {
         foreach($this as $object){
             if($object->getSocket() == $socket){
