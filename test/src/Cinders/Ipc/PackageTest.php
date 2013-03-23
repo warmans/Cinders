@@ -16,7 +16,7 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
 
     public function setUp()
     {
-        $this->object = new Package(Package::TYPE_MESSAGE, array('foo'=>'bar'), 123);
+        $this->object = new Package(Package::TYPE_REGISTERED, array('foo'=>'bar'), 123, 456);
     }
 
     /**
@@ -24,7 +24,7 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
      */
     public function testGetType()
     {
-        $this->assertEquals(Package::TYPE_MESSAGE, $this->object->getType());
+        $this->assertEquals(Package::TYPE_REGISTERED, $this->object->getType());
     }
 
     /**
@@ -38,18 +38,26 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
     /**
      * @group unit-test
      */
-    public function testGetIdentifier()
+    public function testGetTo()
     {
-        $this->assertEquals(123, $this->object->getIdentifier());
+        $this->assertEquals(123, $this->object->getTo());
     }
 
     /**
      * @group unit-test
      */
-    public function testGetDefaultIdentifier()
+    public function testGetFrom()
     {
-        $object = new Package(Package::TYPE_MESSAGE, 'foo');
-        $this->assertTrue(($object->getIdentifier() > 0));
+        $this->assertEquals(456, $this->object->getFrom());
+    }
+
+    /**
+     * @group unit-test
+     */
+    public function testGetDefaultFrom()
+    {
+        $object = new Package(Package::TYPE_REGISTERED, 'foo');
+        $this->assertTrue(($object->getFrom() > 0));
     }
 
     /**
@@ -60,7 +68,7 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
         $serialised = $this->object->serialise();
         $unserialised = Package::unserialise($serialised);
 
-        $this->assertEquals(Package::TYPE_MESSAGE, $unserialised->getType());
+        $this->assertEquals(Package::TYPE_REGISTERED, $unserialised->getType());
         $this->assertEquals(array('foo'=>'bar'), $unserialised->getPayload());
     }
 
@@ -69,11 +77,11 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
      */
     public function testSerialiseUnserialiseString()
     {
-        $object = new Package(Package::TYPE_MESSAGE, 'foo');
+        $object = new Package(Package::TYPE_REGISTERED, 'foo');
         $serialised = $object->serialise();
         $unserialised = Package::unserialise($serialised);
 
-        $this->assertEquals(Package::TYPE_MESSAGE, $unserialised->getType());
+        $this->assertEquals(Package::TYPE_REGISTERED, $unserialised->getType());
         $this->assertEquals('foo', $unserialised->getPayload());
     }
 
@@ -85,11 +93,11 @@ class PackageTest extends \PHPUnit_Framework_TestCase {
         $pl = new \stdClass();
         $pl->foo = 'bar';
 
-        $object = new Package(Package::TYPE_MESSAGE, $pl);
+        $object = new Package(Package::TYPE_REGISTERED, $pl);
         $serialised = $object->serialise();
         $unserialised = Package::unserialise($serialised);
 
-        $this->assertEquals(Package::TYPE_MESSAGE, $unserialised->getType());
+        $this->assertEquals(Package::TYPE_REGISTERED, $unserialised->getType());
         $this->assertEquals('bar', $unserialised->getPayload()->foo);
     }
 }

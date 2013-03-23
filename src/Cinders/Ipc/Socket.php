@@ -22,8 +22,6 @@ class Socket implements \Psr\Log\LoggerAwareInterface
 
     private $socket;
     private $socket_config = array();
-    private $connected = false;
-
     private $log;
 
     /**
@@ -130,8 +128,6 @@ class Socket implements \Psr\Log\LoggerAwareInterface
             throw $this->getSocketException("Unable to connect to $address".($port ? ":$port" : ''));
         }
 
-        $this->setConnected();
-
         $this->setConf('connected_address', $address);
         $this->setConf('connected_port', $port);
     }
@@ -166,8 +162,20 @@ class Socket implements \Psr\Log\LoggerAwareInterface
         //wrap raw socket
         $new_socket = self::wrapSocket($connected);
         $new_socket->setLogger($this->log);
-        $new_socket->setConnected();
         return $new_socket;
+    }
+
+    public function setBlocking($blocking=true)
+    {
+        if($blocking){
+            if (socket_set_block($this->socket)) {
+                $this->setConf('blocking', $blocking);
+            }
+        } else {
+            if (socket_set_nonblock($this->socket)) {
+                $this->setConf('blocking', $blocking);
+            }
+        }
     }
 
     /**
@@ -179,8 +187,8 @@ class Socket implements \Psr\Log\LoggerAwareInterface
      */
     public function write(Package $data)
     {
-        //serialise package to string
-        $data = $data->serialise();
+        //serialise package to string and add terminator
+        $data = $this->sanitizeData($data->serialise()) . self::EOF;
 
         $buffer_len = strlen($data);
         $buffer_sent = 0;
@@ -190,9 +198,9 @@ class Socket implements \Psr\Log\LoggerAwareInterface
         while ($buffer_sent < $buffer_len) {
 
             //do send
-            $sent = @socket_write(
+            $sent = socket_write(
                 $this->socket,
-                $this->sanitizeData(substr($data, $buffer_sent)),
+                substr($data, $buffer_sent),
                 $buffer_len-$buffer_sent
             );
 
@@ -207,9 +215,6 @@ class Socket implements \Psr\Log\LoggerAwareInterface
             //debug
             $this->log->debug("->- Sending...   ".$buffer_sent." ($buffer_len) Bytes");
         }
-
-        //terminate
-        socket_write($this->socket, self::EOF);
 
         // debug
         $this->log->debug("--> Sending...   Complete $buffer_sent Bytes");
@@ -235,35 +240,51 @@ class Socket implements \Psr\Log\LoggerAwareInterface
 
         while($buffer = socket_read($this->socket, self::CHUNK_SIZE)) {
 
+            $this->log->debug("--< Buffing $buffer");
+
             //accumulate total bytes recieved
             $bytes_recieved += strlen($buffer);
 
             //debugging
             $this->log->debug("-<- Recieving... ".strlen($buffer)." ($bytes_recieved) Bytes");
 
-            //check for termination char
-            if(strstr($buffer, self::EOF)){
-                //add final data to response excluding null bytes
-                $recieved .= str_replace(self::EOF, '', $buffer);
-                break;
-            }
-
             //aggregate message
             $recieved .= $buffer;
+
+            //we have reached the end of a package. There may be more so just set non-blocking and continue reading.
+            //if the next iteration is empty we can assume we're done and break.
+            //we can't just break as soon as we see EOF because we might have more data to read but by coincidence
+            //the EOF char happened to be at the end of this CHUNK
+            if (substr($buffer, (0-(strlen(self::EOF))), strlen(self::EOF)) == self::EOF) {
+                socket_set_nonblock($this->getSocket()); //hard call to nonblock to avoid messing with the conf
+            }
+
+            //last iteration we set non-blocking to make sure there was no data left in the buffer.
+            if($buffer === ''){
+                //set blocking to whatever it was before we started messing about with it
+                $this->setBlocking($this->getConf('blocking'));
+                break;
+            }
+        }
+
+        //we may have recived many packages aggregated into a single read so try and split them up based on the EOF char
+        $recieved_packages = array();
+        if ($recieved) {
+            foreach(explode(self::EOF, rtrim($recieved. self::EOF)) as $serialised_package){
+                $package = Package::unserialise($serialised_package);
+                if ($package->getType()) {
+                    $recieved_packages[] = Package::unserialise($serialised_package);
+                }
+            }
         }
 
         $this->log->debug("<-- Recieving... Complete $bytes_recieved Bytes | ".$recieved);
 
         if (!$buffer) {
             $this->log->debug("-/- Connection Closed");
-            $this->setConnected(false);
         }
 
-        if ($recieved) {
-            return Package::unserialise($recieved);
-        }
-
-        return false;
+        return $recieved_packages;
     }
 
     /**
@@ -293,7 +314,6 @@ class Socket implements \Psr\Log\LoggerAwareInterface
     {
         socket_shutdown($this->socket);
         socket_close($this->socket);
-        $this->connected = false;
     }
 
     /**
@@ -316,21 +336,6 @@ class Socket implements \Psr\Log\LoggerAwareInterface
     public function getConf($key)
     {
         return (isset($this->socket_config[$key])) ? $this->socket_config[$key] : null;
-    }
-
-    /**
-     * Is the socket currently connected to something?
-     *
-     * @return bool
-     */
-    public function isConnected()
-    {
-        return $this->connected;
-    }
-
-    public function setConnected($status=true)
-    {
-        $this->connected = $status;
     }
 
     /**

@@ -5,10 +5,8 @@ use \Cinders\Ipc;
 
 unlink('/tmp/sub_srv.sock');
 
-$logger = new \Cinders\Log\StdOut();
-
 $socket = new Ipc\Socket(AF_UNIX, SOCK_STREAM, 0);
-$socket->setLogger($logger);
+$socket->setLogger(new \Cinders\Log\StdOut());
 $socket->bind('/tmp/sub_srv.sock');
 $socket->connect('/tmp/server.sock');
 
@@ -28,18 +26,22 @@ while (1) {
 
         foreach ($data_to_handle['read'] as $read_socket) {
 
-            $msg =  $read_socket->read();
-            if (false === $msg) {
+            $msgs = $read_socket->read();
+            if(!count($msgs)){
                 $collection->detach($read_socket);
                 echo "Server Disconnected\n";
-            } else {
+                return;
+            }
 
+            foreach ($msgs as $msg) {
                 echo 'New Message '.$msg->getPayload()."\n";
 
-                if ($msg->getType() != Ipc\Package::TYPE_ACK) {
-                    $read_socket->write(new Ipc\Package(Ipc\Package::TYPE_ACK, 'OK'));
+                //only respond to non ack/fire-and-forget messages
+                if (!in_array($msg->getType(), array(Ipc\Package::TYPE_ACK, Ipc\Package::TYPE_FIRE_AND_FORGET))) {
+                    $read_socket->write(new Ipc\Package(Ipc\Package::TYPE_ACK, 'OK', $msg->getFrom()));
                 }
             }
+
         }
     }
 }

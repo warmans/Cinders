@@ -48,6 +48,8 @@ class Hub implements \Psr\Log\LoggerAwareInterface
 
             foreach ($data_to_handle['read'] as $active_client) {
 
+                $active_client->setLogger($this->logger);
+
                 if ($active_client->sameAs($this->socket)) {
 
                     $new_client = $active_client->accept();
@@ -64,22 +66,24 @@ class Hub implements \Psr\Log\LoggerAwareInterface
                 $this->logger->debug($active_client->getPeerinfo(). ' changed');
 
                 //new message or someone disconnected
-                if (!($msg = $active_client->read())) {
-                    $this->logger->debug('client disconnected: '.print_r($active_client->getPeerinfo(), true));
+                $msgs = $active_client->read();
+                if (!count($msgs)) {
+                    $this->logger->debug('client disconnected: '.$active_client->getPeerinfo());
                     $collection->detach($active_client);
                     continue;
                 }
 
-                $this->logger->debug('recieved message: '.$msg->serialise());
-
+                $this->logger->debug('recieved '.count($msgs).' messages: '.print_r($msgs));
                 $this->logger->debug(''.count($collection).' clients in collection');
 
                 foreach ($collection as $client) {
                     //send to all clients excluding original sender and myself
                     if (!$client->sameAs($this->socket)) {
                         if (!$client->sameAs($active_client)) {
-                            $this->logger->debug('relay sent to '.$client->getPeerinfo());
-                            $client->write($msg);
+                            foreach($msgs as $msg){
+                                $this->logger->debug('relay sent to '.$client->getPeerinfo());
+                                $client->write($msg);
+                            }
                         } else {
                             $this->logger->debug('relay skipped '.$client->getPeerinfo());
                         }

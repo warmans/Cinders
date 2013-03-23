@@ -1,0 +1,10 @@
+Buildfile: /var/www/Cinders/test/files/projects/foo/workspace/phing.xml
+
+foo > do-nothing:
+
+     [echo] Doing Nothing in ${cinders.build_dir}
+
+BUILD FINISHED
+
+Total time: 0.3154 seconds
+

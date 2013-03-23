@@ -9,15 +9,19 @@ namespace Cinders\Ipc;
 class Package
 {
     const TYPE_ACK = 'ack';
-    const TYPE_MESSAGE = 'message';
+    const TYPE_REGISTERED = 'reg';
+    const TYPE_FIRE_AND_FORGET = 'faf';
 
-    private $identifier;
+    private $from = null;
+    private $to = null;
+
     private $type;
     private $payload;
 
-    public function __construct($type, $payload, $identifier=null)
+    public function __construct($type, $payload, $to=null, $from=null)
     {
-        $this->identifier = $identifier ?: getmypid();
+        $this->from = $from ?: getmypid();
+        $this->to = $to;
         $this->type = $type;
         $this->payload = $payload;
     }
@@ -32,21 +36,26 @@ class Package
         return $this->payload;
     }
 
-    public function getIdentifier()
+    public function getTo()
     {
-        return $this->identifier;
+        return $this->to;
+    }
+
+    public function getFrom()
+    {
+        return $this->from;
     }
 
     public function serialise()
     {
         return json_encode(
-            array('type'=>$this->type, 'payload'=>serialize($this->payload), 'identifier'=>$this->identifier)
+            array('type'=>$this->type, 'payload'=>serialize($this->payload), 'to'=>$this->getTo(), 'from'=>$this->getfrom())
         );
     }
 
     public static function unserialise($serialised)
     {
         $raw = json_decode($serialised, true);
-        return new static($raw['type'], unserialize($raw['payload']), $raw['identifier']);
+        return new static($raw['type'], unserialize($raw['payload']), $raw['to'], $raw['from']);
     }
 }
