@@ -8,89 +8,24 @@ namespace Cinders\Ipc;
  *
  * @author warmans
  */
-class Hub implements \Psr\Log\LoggerAwareInterface
+class Hub extends AbstractServer
 {
-    private $logger;
-    private $socket;
-
-    /**
-     *
-     * @param string $listen_socket path to a unix socket
-     */
-    public function __construct($socket_path)
+    protected function handleMsgs($active_socket, $msgs=array())
     {
-        $this->socket = new Socket(AF_UNIX, SOCK_STREAM, 0);
-        $this->socket->bind($socket_path);
-    }
+        $this->logger->debug('recieved '.count($msgs).' messages: '.print_r($msgs));
 
-    public function setLogger(\Psr\Log\LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-    }
-
-    public function start()
-    {
-        $this->socket->listen();
-
-        $collection = new Socket\Collection();
-        $collection->attach($this->socket);
-
-        while (true) {
-
-            //go into blocking selection
-            $this->logger->debug('selecting...');
-            $data_to_handle = $collection->select(null);
-            $this->logger->debug("{$data_to_handle['changed']} clients changed");
-
-            if ($data_to_handle['changed'] < 1) {
-                continue;
+        foreach ($this->socket_collection as $client) {
+            //send to all clients excluding original sender and myself
+            if (!$client->sameAs($this->listen_socket)) {
+                if (!$client->sameAs($active_socket)) {
+                    foreach($msgs as $msg){
+                        $this->logger->debug('relay sent to '.$client->getPeerinfo());
+                        $client->write($msg);
+                    }
+                } else {
+                    $this->logger->debug('relay skipped '.$client->getPeerinfo());
+                }
             }
-
-            foreach ($data_to_handle['read'] as $active_client) {
-
-                $active_client->setLogger($this->logger);
-
-                if ($active_client->sameAs($this->socket)) {
-
-                    $new_client = $active_client->accept();
-
-                    if (!$collection->contains($new_client)) {
-                        //new client connected
-                        $collection->attach($new_client);
-                        $this->logger->debug('new client connected: '.print_r($new_client->getPeerinfo(), true));
-                    }
-
-                    continue;
-                }
-
-                $this->logger->debug($active_client->getPeerinfo(). ' changed');
-
-                //new message or someone disconnected
-                $msgs = $active_client->read();
-                if (!count($msgs)) {
-                    $this->logger->debug('client disconnected: '.$active_client->getPeerinfo());
-                    $collection->detach($active_client);
-                    continue;
-                }
-
-                $this->logger->debug('recieved '.count($msgs).' messages: '.print_r($msgs));
-                $this->logger->debug(''.count($collection).' clients in collection');
-
-                foreach ($collection as $client) {
-                    //send to all clients excluding original sender and myself
-                    if (!$client->sameAs($this->socket)) {
-                        if (!$client->sameAs($active_client)) {
-                            foreach($msgs as $msg){
-                                $this->logger->debug('relay sent to '.$client->getPeerinfo());
-                                $client->write($msg);
-                            }
-                        } else {
-                            $this->logger->debug('relay skipped '.$client->getPeerinfo());
-                        }
-                    }
-                }
-
-            } //endfor
-        }//endhile
+        }
     }
 }

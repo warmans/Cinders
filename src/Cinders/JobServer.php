@@ -6,23 +6,57 @@ namespace Cinders;
  *
  * @author warmans
  */
-class JobServer
+class JobServer extends Ipc\AbstractServer
 {
-    const UNIX_SOCKET = '/tmp/cinders_server.sock';
+    /**
+     * @var \SplQueue
+     */
+    private $queue;
 
-    private $socket;
-    private $queues = array();
-
-    public function addJob($queue_name, JobServer\Job $job)
+    public function __construct($socket_path, \SplQueue $queue)
     {
-        $this->getQueue($queue_name)->enqueue($job);
+        parent::__construct($socket_path);
+        $this->queue = $queue;
     }
 
-    private function getQueue($queue_name)
+    /**
+     *
+     * @param \Cinders\Ipc\Socket $active_socket
+     * @param array $msgs
+     */
+    public function handleMsgs($active_socket, $msgs = array())
     {
-        if (!array_key_exists($queue_name, $this->queues)) {
-            $this->queues[$queue_name] = new \SplQueue();
+        foreach ($msgs as $msg) {
+            
+            switch ($msg->getType()) {
+
+                case (JobServer\Package::TYPE_JOB):
+                    $this->queue->enqueue($msg->getPayload());
+                    break;
+
+                case (JobServer\Package::TYPE_JOB_REQUEST):
+                    $this->handleJobRequest($active_socket);
+                    break;
+
+                default:
+                    //other
+                    break;
+            }
         }
-        return $this->queues[$queue_name];
+    }
+
+    /**
+     * @param \Cinders\Ipc\Socket $requester
+     */
+    protected function handleJobRequest($requester)
+    {
+        if ($job = $this->queue->shift()) {
+
+            //send job
+            if (!$requester->write(new JobServer\Package(JobServer\Package::TYPE_JOB, $job))) {
+                //something went wrong - re-queue job
+                $this->queue->enqueue($job);
+            }
+        }
     }
 }
