@@ -8,6 +8,8 @@ namespace Cinders;
  */
 class JobServer extends Ipc\AbstractServer
 {
+    const MAX_WORKERS = 2;
+
     /**
      * @var \SplQueue
      */
@@ -19,6 +21,16 @@ class JobServer extends Ipc\AbstractServer
         $this->queue = $queue;
     }
 
+    public function start()
+    {
+        for ($i=0; $i < self::MAX_WORKERS; $i++) {
+            passthru('nohup php job-worker.php >> /tmp/workers.log 2>&1 &', $status);
+        }
+
+        parent::start();
+        $this->listen_socket->setOption(SOL_SOCKET, SO_REUSEADDR);
+    }
+
     /**
      *
      * @param \Cinders\Ipc\Socket $active_socket
@@ -27,7 +39,7 @@ class JobServer extends Ipc\AbstractServer
     public function handleMsgs($active_socket, $msgs = array())
     {
         foreach ($msgs as $msg) {
-            
+
             switch ($msg->getType()) {
 
                 case (JobServer\Package::TYPE_JOB):
@@ -50,12 +62,14 @@ class JobServer extends Ipc\AbstractServer
      */
     protected function handleJobRequest($requester)
     {
-        if ($job = $this->queue->shift()) {
+        if($this->queue->count() > 0){
+            if ($job = $this->queue->shift()) {
 
-            //send job
-            if (!$requester->write(new JobServer\Package(JobServer\Package::TYPE_JOB, $job))) {
-                //something went wrong - re-queue job
-                $this->queue->enqueue($job);
+                //send job
+                if (!$requester->write(new JobServer\Package(JobServer\Package::TYPE_JOB, $job))) {
+                    //something went wrong - re-queue job
+                    $this->queue->enqueue($job);
+                }
             }
         }
     }

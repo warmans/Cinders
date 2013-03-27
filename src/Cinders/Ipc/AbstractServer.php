@@ -10,8 +10,19 @@ namespace Cinders\Ipc;
  */
 abstract class AbstractServer implements \Psr\Log\LoggerAwareInterface
 {
+    /**
+     * @var \Cinders\Log\AbstractLogger
+     */
     protected $logger;
+
+    /**
+     * @var \Cinders\Ipc\Socket
+     */
     protected $listen_socket;
+
+    /**
+     * @var \Cinders\Ipc\Socket\Collection
+     */
     protected $socket_collection;
 
     /**
@@ -22,17 +33,17 @@ abstract class AbstractServer implements \Psr\Log\LoggerAwareInterface
     {
         $this->listen_socket = new Socket(AF_UNIX, SOCK_STREAM, 0);
         $this->listen_socket->bind($socket_path);
+        $this->listen_socket->listen();
     }
 
     public function setLogger(\Psr\Log\LoggerInterface $logger)
     {
         $this->logger = $logger;
+        $this->listen_socket->setLogger($logger);
     }
 
     public function start()
     {
-        $this->listen_socket->listen();
-
         $this->socket_collection = new Socket\Collection();
         $this->socket_collection->attach($this->listen_socket);
 

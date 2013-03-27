@@ -89,11 +89,11 @@ class Socket implements \Psr\Log\LoggerAwareInterface
     /**
      * Set an option on the underlying socket
      *
-     * @param type $level
-     * @param type $optname
-     * @param type $optval
+     * @param int $level
+     * @param int $optname
+     * @param int $optval
      */
-    public function setOption($level, $optname, $optval)
+    public function setOption($level, $optname, $optval=1)
     {
         socket_set_option($this->socket, $level, $optname, $optval);
     }

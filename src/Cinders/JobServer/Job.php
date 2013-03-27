@@ -8,5 +8,5 @@ namespace Cinders\JobServer;
  */
 abstract class Job
 {
-
+    abstract public function execute();
 }
