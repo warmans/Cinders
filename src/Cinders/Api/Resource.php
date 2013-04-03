@@ -10,18 +10,29 @@ use \Symfony\Component\HttpFoundation;
  */
 abstract class Resource
 {
+    private $cinders;
     private $parent;
     private $name;
     private $sub_resources = array();
 
-    public function __construct($name)
+    public function __construct($name, \Cinders\Cinders $cinders)
     {
         $this->name = $name;
+        $this->cinders = $cinders;
     }
 
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     *
+     * @return \Cinders\Cinders
+     */
+    public function getCinders()
+    {
+        return $this->cinders;
     }
 
     /**
@@ -71,7 +82,7 @@ abstract class Resource
             }
 
             //invalid route - we're probably a child that can't match the current uri
-            return HttpFoundation\Response::create('Resource Not Found. Routing failed at: '.$route->getCurrentSegment(), 404);
+            throw new Exception\Http('Resource Not Found. Routing failed at: '.$route->getCurrentSegment(), 404);
         }
 
         //claim any additional arguments
@@ -81,7 +92,7 @@ abstract class Resource
                 $resource_arguments[$name] = $route->getNextSegment();
             } else {
                 //if a single segment doesn't match the route is broken
-                return HttpFoundation\Response::create('Invalid Resource Arguments', 404);
+                throw new Exception\Http('Invalid Resource Arguments', 404);
             }
         }
 
@@ -102,7 +113,7 @@ abstract class Resource
             case 'DELETE':
                 return $this->handleDelete($resource_arguments, $request);
             default:
-                 return HttpFoundation\Response::create('Unsupported HTTP Method: '.$request->getMethod(), 404);
+                throw new Api\Exception\Http('Unsupported HTTP Method: '.$request->getMethod(), 500);
         }
     }
 
@@ -138,10 +149,6 @@ abstract class Resource
 
     public function makeResponse($success, $data=null, $msg=null)
     {
-        $response = HttpFoundation\Response::create(
-            json_encode(array('success'=>$success,'msg'=>$msg, 'data'=>$data))
-        );
-        $response->headers->set('content-type', 'application/json');
-        return $response;
+        return array('success'=>$success, 'msg'=>$msg, 'data'=>$data);
     }
 }

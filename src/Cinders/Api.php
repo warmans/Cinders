@@ -20,6 +20,7 @@ class Api {
     public function addResource(Api\Resource $resource)
     {
         $this->resources[] = $resource;
+        return $resource;
     }
 
     public function getResources()
@@ -34,14 +35,38 @@ class Api {
      */
     public function handleRequest(HttpFoundation\Request $request)
     {
-        $route = new Api\ActiveRoute($request->getPathInfo());
+        try {
+            $route = new Api\ActiveRoute($request->getPathInfo());
 
-        foreach ($this->resources as $resource) {
-            if ($resource->getName() == $route->getCurrentSegment()) {
-                return $resource->handleRequest($route, $request);
+            foreach ($this->resources as $resource) {
+                if ($resource->getName() == $route->getCurrentSegment()) {
+                    $result = $resource->handleRequest($route, $request);
+                    return $this->makeResponse($result['success'], $result['data'], $result['msg']);
+                }
             }
+        } catch (Api\Exception\Http $e) {
+            return $this->makeResponse(false, null, $e->getMessage(), $e->getCode());
         }
 
-        return HttpFoundation\Response::create('Resource Not Found', 404);
+        return $this->makeResponse(false, null, 'Resource not found', 404);
+    }
+
+    /**
+     * Create a Response object
+     *
+     * @param bool $success
+     * @param mixed $data
+     * @param string $msg
+     * @param int $status
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function makeResponse($success, $data=null, $msg=null, $status=200)
+    {
+        $response = HttpFoundation\Response::create(
+            json_encode(array('success'=>$success,'msg'=>$msg, 'data'=>$data))
+        );
+        $response->headers->set('content-type', 'application/json');
+        $response->setStatusCode($status);
+        return $response;
     }
 }

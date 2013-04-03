@@ -16,7 +16,12 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
 
     public function setUp()
     {
-        $this->object = new \Cinders\Api\Resource\Hello('hello');
+        $this->object = new \Cinders\Api\Resource\Hello('hello', $this->getMockCinders());
+    }
+
+    private function getMockCinders()
+    {
+        return $this->getMockBuilder('\\Cinders\\Cinders')->disableOriginalConstructor()->getMock();
     }
 
     /**
@@ -40,7 +45,7 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
      */
     public function testSetGetParent()
     {
-        $parent = new \Cinders\Api\Resource\Hello('hello2');
+        $parent = new \Cinders\Api\Resource\Hello('hello2', $this->getMockCinders());
         $this->object->setParent($parent);
         $this->assertEquals($parent, $this->object->getParent());
     }
@@ -50,7 +55,7 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
      */
     public function testAddResource()
     {
-        $child = new \Cinders\Api\Resource\Hello('hello2');
+        $child = new \Cinders\Api\Resource\Hello('hello2', $this->getMockCinders());
         $this->object->addResource($child);
         $this->assertContains($child, $this->object->getSubResources());
     }
@@ -69,10 +74,9 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
             ->will($this->returnValue('GET'));
 
         $result = $this->object->handleRequest($route, $mock_request);
-        $content = json_decode($result->getContent());
 
-        $this->assertEquals(true, $content->success);
-        $this->assertEquals('world', $content->data);
+        $this->assertEquals(true, $result['success']);
+        $this->assertEquals('world', $result['data']);
     }
 
     /**
@@ -88,12 +92,12 @@ class HelloTest extends \PHPUnit_Framework_TestCase {
             ->method('getMethod')
             ->will($this->returnValue('GET'));
 
-        $this->object->addResource(new \Cinders\Api\Resource\Hello('foo'));
+        $this->object->addResource(new \Cinders\Api\Resource\Hello('foo', $this->getMockCinders()));
 
         $result = $this->object->handleRequest($route, $mock_request);
-        $content = json_decode($result->getContent());
+        $content = $result['data'];
 
-        $this->assertEquals(true, $content->success);
-        $this->assertEquals('bar', $content->data);
+        $this->assertEquals(true, $result['success']);
+        $this->assertEquals('bar', $result['data']);
     }
 }

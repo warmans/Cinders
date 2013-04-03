@@ -29,7 +29,7 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
      */
     public function testAddResource()
     {
-        $resource = new \Cinders\Api\Resource\Hello('hello');
+        $resource = new \Cinders\Api\Resource\Hello('hello', $this->getMockCinders());
         $this->object->addResource($resource);
         $this->assertEquals(array($resource), $this->object->getResources());
     }
@@ -39,7 +39,7 @@ class ApiTest extends \PHPUnit_Framework_TestCase {
      */
     public function testHandleRequest()
     {
-        $this->object->addResource(new Api\Resource\Hello('hello'));
+        $this->object->addResource(new Api\Resource\Hello('hello', $this->getMockCinders()));
 
         $mock_request = $this->getMock('\\Symfony\\Component\\HttpFoundation\\Request');
         $mock_request
